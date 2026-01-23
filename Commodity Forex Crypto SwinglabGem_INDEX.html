@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SwingLab Institutional Dashboard</title>
+  <style>
+    :root { --bg: #050505; --card: #111; --gold: #D4AF37; --text: #e0e0e0; --green: #00ff9d; --red: #ff4d4d; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+    .header h1 { color: var(--gold); margin: 0; letter-spacing: 1px; font-size: 24px; }
+    
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+    
+    .card { background: var(--card); border: 1px solid #222; border-radius: 8px; padding: 20px; position: relative; transition: transform 0.2s; }
+    .card:hover { border-color: var(--gold); transform: translateY(-2px); }
+    .card.blocked { opacity: 0.6; border-color: var(--red); }
+
+    .top-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
+    .ticker { font-size: 18px; font-weight: bold; color: #fff; }
+    .type { font-size: 12px; color: #666; text-transform: uppercase; background: #1a1a1a; padding: 2px 8px; border-radius: 4px; }
+
+    .price-row { font-size: 28px; font-weight: 300; color: var(--gold); margin-bottom: 10px; }
+    
+    .stats { display: flex; justify-content: space-between; font-size: 13px; color: #888; margin-bottom: 15px; }
+    .score-val { color: #fff; font-weight: bold; }
+
+    .signal-box { background: #1a1a1a; padding: 10px; border-radius: 4px; text-align: center; font-weight: bold; letter-spacing: 0.5px; }
+    .signal-BUY { color: var(--green); border: 1px solid var(--green); }
+    .signal-SELL { color: var(--red); border: 1px solid var(--red); }
+    .signal-WAIT { color: #888; border: 1px solid #444; }
+    .signal-VETO { color: var(--red); border: 1px dashed var(--red); }
+
+    .loader { text-align: center; color: var(--gold); margin-top: 50px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>COMMODITY FOREX & CRYPTO SWINGLAB <span style="color:#666">QUANT ENGINE v7.5 BY TARA - THE TRADING & RESEARCH ACADEMY</span></h1>
+  <div id="timestamp" style="color:#666; font-size:14px">Initializing...</div>
+</div>
+
+<div id="container" class="grid">
+  <div class="loader">CONNECTING TO QUANT SERVER...</div>
+</div>
+
+<script>
+  // REPLACE WITH YOUR GAS WEB APP URL
+  const API_URL = "https://script.google.com/macros/s/AKfycbzsMGm4ku5CnLX0Wjw05Le5_UX7kFiqX7kpUvYUVB7G6w6szvcHWJWwG2_QQ91sd6QC/exec"; 
+
+  async function fetchDashboard() {
+    try {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      render(data);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function render(data) {
+    const container = document.getElementById('container');
+    container.innerHTML = '';
+    
+    document.getElementById('timestamp').innerText = "LAST UPDATE: " + new Date().toLocaleTimeString();
+
+    data.forEach(item => {
+      // Currency Formatting
+      let priceDisplay = item.price;
+      if (typeof item.price === 'number') {
+        const isINR = item.ticker.includes("INR") || item.ticker.includes("MCX");
+        priceDisplay = isINR 
+          ? "₹" + item.price.toLocaleString('en-IN', {maximumFractionDigits: 2})
+          : "$" + item.price.toLocaleString('en-US', {maximumFractionDigits: 4});
+      }
+
+      // Signal Styling
+      let signalClass = "signal-WAIT";
+      if (item.signal.includes("BUY")) signalClass = "signal-BUY";
+      if (item.signal.includes("SELL")) signalClass = "signal-SELL";
+      if (item.signal.includes("VETO")) signalClass = "signal-VETO";
+
+      const html = `
+        <div class="card ${item.status.includes("INVERSION") ? 'blocked' : ''}">
+          <div class="top-row">
+            <div class="ticker">${item.ticker}</div>
+            <div class="type">${item.type}</div>
+          </div>
+          <div class="price-row">${priceDisplay}</div>
+          
+          <div class="stats">
+            <div>QUANT SCORE <span class="score-val">${item.score}</span></div>
+            <div>STATUS <span class="score-val" style="color:${item.status.includes('PRIME')? 'var(--green)':'#888'}">${item.status}</span></div>
+          </div>
+
+          <div class="signal-box ${signalClass}">
+            ${item.signal} • ${item.action.toUpperCase()}
+          </div>
+        </div>
+      `;
+      container.innerHTML += html;
+    });
+  }
+
+  // Refresh every 30 seconds
+  fetchDashboard();
+  setInterval(fetchDashboard, 30000);
+</script>
+
+</body>
+</html>
